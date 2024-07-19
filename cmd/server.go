@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/Ararat25/go_final_project/tests"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
@@ -11,9 +12,16 @@ import (
 
 var (
 	defaultPort = tests.Port
-	webDir      = "./web"
+	webDir      = "../web"
 	toDoPort    = "TODO_PORT"
 )
+
+func LoadEnvVars() {
+	err := godotenv.Load("../.env")
+	if err != nil {
+		log.Println("Ошибка загрузки .env файла, будут использованы значения по умолчанию")
+	}
+}
 
 // runServer запускает сервер
 func runServer() {
