@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/Ararat25/go_final_project/dbManager"
+	"log"
 )
 
 func init() {
@@ -10,10 +10,12 @@ func init() {
 }
 
 func main() {
-	_, err := dbManager.Connect()
+	db, err := dbManager.Connect()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalln(err)
 		return
 	}
+	defer db.Close()
+
 	runServer()
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/Ararat25/go_final_project/controller"
 	"github.com/Ararat25/go_final_project/tests"
 	"github.com/joho/godotenv"
 	"log"
@@ -41,6 +42,7 @@ func getServerWithProperties(port int) *http.Server {
 	mux := http.NewServeMux()
 
 	mux.Handle("/", http.FileServer(http.Dir(webDir)))
+	mux.HandleFunc("/api/nextdate", controller.NextDateHandler)
 
 	server := http.Server{
 		Addr:    addr,

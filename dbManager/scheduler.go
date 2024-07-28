@@ -19,7 +19,7 @@ type SchedulerStore struct {
 // Connect присоединяется к базе данных и возвращает *SchedulerStore
 func Connect() (*SchedulerStore, error) {
 	exist := true
-	if CheckExistsDBFile() {
+	if checkExistsDBFile() {
 		exist = false
 	}
 
@@ -33,7 +33,15 @@ func Connect() (*SchedulerStore, error) {
 	}
 
 	if !exist {
-		store.CreateSchedulerTable()
+		err = store.createSchedulerTable()
+		if err != nil {
+			return nil, err
+		}
+
+		err = store.createIndexDate()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &store, nil
 }
@@ -43,7 +51,7 @@ func (db *SchedulerStore) Close() {
 }
 
 // CheckExistsDBFile проверяет существует ли файл с бд, если true значит файла не существует
-func CheckExistsDBFile() bool {
+func checkExistsDBFile() bool {
 	envFile := os.Getenv("TODO_DBFILE")
 	if len(envFile) > 0 {
 		dbPath = envFile
@@ -75,8 +83,8 @@ func (db *SchedulerStore) ExecuteQuery(query string) (sql.Result, error) {
 	return res, nil
 }
 
-// CreateSchedulerTable создает scheduler таблицу в базе данных
-func (db *SchedulerStore) CreateSchedulerTable() error {
+// createSchedulerTable создает scheduler таблицу в базе данных
+func (db *SchedulerStore) createSchedulerTable() error {
 	sqlCreateTableQuery := `CREATE TABLE IF NOT EXISTS scheduler (
 		"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,		
 		"date" CHAR(8) NOT NULL DEFAULT "",
@@ -86,6 +94,18 @@ func (db *SchedulerStore) CreateSchedulerTable() error {
 	);`
 
 	_, err := db.ExecuteQuery(sqlCreateTableQuery)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateSchedulerTable создает scheduler таблицу в базе данных
+func (db *SchedulerStore) createIndexDate() error {
+	sqlCreateIndexQuery := `CREATE INDEX date_index ON scheduler (date);`
+
+	_, err := db.ExecuteQuery(sqlCreateIndexQuery)
 	if err != nil {
 		return err
 	}
