@@ -12,6 +12,15 @@ import (
 
 var dbPath = tests.DBFile
 
+type Task struct {
+	ID      int64  `json:"id" db:"id"`
+	Date    string `json:"date" db:"date"`
+	Title   string `json:"title" db:"title"`
+	Comment string `json:"comment" db:"comment"`
+	Repeat  string `json:"repeat" db:"repeat"`
+}
+
+// SchedulerStore структура для работы с базой данных scheduler
 type SchedulerStore struct {
 	db *sql.DB
 }
@@ -46,11 +55,12 @@ func Connect() (*SchedulerStore, error) {
 	return &store, nil
 }
 
+// Close закрывает соединение с бд
 func (db *SchedulerStore) Close() {
 	db.db.Close()
 }
 
-// CheckExistsDBFile проверяет существует ли файл с бд, если true значит файла не существует
+// checkExistsDBFile проверяет существует ли файл с бд, если true значит файла не существует
 func checkExistsDBFile() bool {
 	envFile := os.Getenv("TODO_DBFILE")
 	if len(envFile) > 0 {
@@ -103,7 +113,7 @@ func (db *SchedulerStore) createSchedulerTable() error {
 
 // CreateSchedulerTable создает scheduler таблицу в базе данных
 func (db *SchedulerStore) createIndexDate() error {
-	sqlCreateIndexQuery := `CREATE INDEX date_index ON scheduler (date);`
+	sqlCreateIndexQuery := `CREATE INDEX IF NOT EXISTS date_index ON scheduler (date);`
 
 	_, err := db.ExecuteQuery(sqlCreateIndexQuery)
 	if err != nil {
@@ -111,4 +121,24 @@ func (db *SchedulerStore) createIndexDate() error {
 	}
 
 	return nil
+}
+
+// AddTask добавляет задачу в базу данных
+func (db *SchedulerStore) AddTask(task Task) (int64, error) {
+	result, err := db.db.Exec(`INSERT INTO scheduler (date, title, comment, repeat) 
+	VALUES (:date, :title, :comment, :repeat)`,
+		sql.Named("date", task.Date),
+		sql.Named("title", task.Title),
+		sql.Named("comment", task.Comment),
+		sql.Named("repeat", task.Repeat))
+	if err != nil {
+		return -1, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return -1, err
+	}
+
+	return id, nil
 }

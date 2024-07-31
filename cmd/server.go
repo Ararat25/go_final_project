@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/Ararat25/go_final_project/controller"
+	"github.com/Ararat25/go_final_project/dbManager"
+	"github.com/Ararat25/go_final_project/middleware"
+	"github.com/Ararat25/go_final_project/model"
 	"github.com/Ararat25/go_final_project/tests"
 	"github.com/joho/godotenv"
 	"log"
@@ -17,6 +20,7 @@ var (
 	toDoPort    = "TODO_PORT"
 )
 
+// LoadEnvVars загружает переменные окружения из файла .env
 func LoadEnvVars() {
 	err := godotenv.Load("../.env")
 	if err != nil {
@@ -26,23 +30,35 @@ func LoadEnvVars() {
 
 // runServer запускает сервер
 func runServer() {
+	db, err := dbManager.Connect()
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+	defer db.Close()
+
 	port := getServerPort()
-	server := getServerWithProperties(port)
+	server := getServerWithProperties(port, db)
 
 	log.Printf("Сервер запущен на порту: %d", port)
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatalln("Ошибка запуска сервера")
 	}
 }
 
-// getServerWithProperties возвращает сервер с определенными свойтсвами
-func getServerWithProperties(port int) *http.Server {
+// getServerWithProperties возвращает сервер с определенными свойствами
+func getServerWithProperties(port int, db *dbManager.SchedulerStore) *http.Server {
 	addr := fmt.Sprintf(":%d", port)
 	mux := http.NewServeMux()
 
+	service := model.NewService(db)
+
+	handlers := controller.NewHandler(service)
+
 	mux.Handle("/", http.FileServer(http.Dir(webDir)))
 	mux.HandleFunc("/api/nextdate", controller.NextDateHandler)
+	mux.Handle("/api/task", setJsonHeader(handlers.Task))
 
 	server := http.Server{
 		Addr:    addr,
@@ -65,4 +81,9 @@ func getServerPort() int {
 	}
 
 	return port
+}
+
+// setJsonHeader устанавливает заголовок application/json в ответ
+func setJsonHeader(h http.HandlerFunc) http.Handler {
+	return middleware.JsonHeader(h)
 }

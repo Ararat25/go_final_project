@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"github.com/Ararat25/go_final_project/customError"
 	"strconv"
 	"strings"
@@ -9,23 +10,51 @@ import (
 
 var period = []string{"d", "w", "m", "y"}
 
+// Repeat структура для работы с павилом повторения
 type Repeat struct {
 	Period      string
 	FirstSlice  []int
 	SecondSlice []int
 }
 
+var timeLayout = "20060102"
+
+func (r *Repeat) toString() string {
+	res := r.Period
+
+	firstString := ""
+	for _, elem := range r.FirstSlice {
+		firstString = fmt.Sprintf("%s,%s", firstString, elem)
+	}
+
+	secondString := ""
+	for _, elem := range r.FirstSlice {
+		secondString = fmt.Sprintf("%s,%s", secondString, elem)
+	}
+
+	if firstString != "" {
+		res = fmt.Sprintf("%s %s", res, firstString)
+	}
+
+	if secondString != "" {
+		res = fmt.Sprintf("%s %s", res, secondString)
+	}
+
+	return res
+}
+
+// NextDate возвращает следующий день, в зависимости от заданного правила
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 	if repeat == "" {
 		return "", customError.ErrRepeatNotSpecified
 	}
 
-	parseDate, err := time.Parse("20060102", date)
+	parseDate, err := time.Parse(timeLayout, date)
 	if err != nil {
 		return "", err
 	}
 
-	parseRepeatRule, err := parseRepeat(repeat)
+	parseRepeatRule, err := ParseRepeat(repeat)
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +73,8 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 	}
 }
 
-func parseRepeat(repeat string) (Repeat, error) {
+// ParseRepeat парсит строку с правилом
+func ParseRepeat(repeat string) (Repeat, error) {
 	repeatSlice := strings.Split(repeat, " ")
 
 	repeatPeriod := repeatSlice[0]
@@ -94,6 +124,7 @@ func parseRepeat(repeat string) (Repeat, error) {
 	}, nil
 }
 
+// sliceStringToInt преобразует слайс строк в слайс чисел
 func sliceStringToInt(strSlice []string) ([]int, error) {
 	var intSlice []int
 	for _, str := range strSlice {
@@ -107,6 +138,7 @@ func sliceStringToInt(strSlice []string) ([]int, error) {
 	return intSlice, nil
 }
 
+// isValidDay проверяет что день переданная день есть в мапе
 func isValidDay(nextDate time.Time, dayMap map[int]bool) bool {
 	dInMonth := daysInMonth(nextDate)
 	day := nextDate.Day()
@@ -119,6 +151,7 @@ func daysInMonth(t time.Time) int {
 	return time.Date(year, month+1, 0, 0, 0, 0, 0, t.Location()).Day()
 }
 
+// dParse парсер для расчета следующей даты при указании в правиле повторения d
 func dParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 	if len(repeat.FirstSlice) != 1 {
 		return "", customError.ErrNotValidRepeat
@@ -134,9 +167,10 @@ func dParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 		nextDate = nextDate.AddDate(0, 0, interval)
 	}
 
-	return nextDate.Format("20060102"), nil
+	return nextDate.Format(timeLayout), nil
 }
 
+// wParse парсер для расчета следующей даты при указании в правиле повторения w
 func wParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 	if len(repeat.FirstSlice) < 1 || len(repeat.FirstSlice) > 7 {
 		return "", customError.ErrNotValidRepeat
@@ -173,9 +207,10 @@ func wParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 		nextDate = nextDate.AddDate(0, 0, 1)
 	}
 
-	return nextDate.Format("20060102"), nil
+	return nextDate.Format(timeLayout), nil
 }
 
+// mParse парсер для расчета следующей даты при указании в правиле повторения m
 func mParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 	if len(repeat.FirstSlice) == 0 {
 		return "", customError.ErrNotValidRepeat
@@ -246,9 +281,10 @@ func mParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 		}
 	}
 
-	return nextDate.Format("20060102"), nil
+	return nextDate.Format(timeLayout), nil
 }
 
+// yParse парсер для расчета следующей даты при указании в правиле повторения y
 func yParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 	if len(repeat.FirstSlice) != 0 {
 		return "", customError.ErrNotValidRepeat
@@ -259,5 +295,5 @@ func yParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 		nextDate = nextDate.AddDate(1, 0, 0)
 	}
 
-	return nextDate.Format("20060102"), nil
+	return nextDate.Format(timeLayout), nil
 }

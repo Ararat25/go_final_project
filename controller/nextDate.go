@@ -7,12 +7,13 @@ import (
 	"time"
 )
 
+// NextDateHandler обработчик возвращает следующий день, в зависимости от заданного правила
 func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	now := r.FormValue("now")
 	date := r.FormValue("date")
 	repeat := r.FormValue("repeat")
 
-	nowParse, err := time.Parse("20060102", now)
+	nowParse, err := time.Parse(timeLayout, now)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
