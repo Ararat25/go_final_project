@@ -3,6 +3,7 @@ package dbManager
 import (
 	"database/sql"
 	"fmt"
+	"github.com/Ararat25/go_final_project/customError"
 	"log"
 	_ "modernc.org/sqlite"
 	"os"
@@ -202,6 +203,56 @@ func (db *SchedulerStore) GetTasksBySearchString(limit int, search string) ([]Ta
 	}
 
 	return tasks, nil
+}
+
+// GetTasksById возвращает задачу по id
+func (db *SchedulerStore) GetTasksById(id int) (*Task, error) {
+	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler 
+                                        WHERE id = :id`,
+		sql.Named("id", id))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var task Task
+
+	rows.Next()
+
+	err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	if err != nil {
+		return nil, err
+	}
+
+	return &task, nil
+}
+
+// EditTaskById изменяет пареметры задачи
+func (db *SchedulerStore) EditTaskById(task *Task) error {
+	result, err := db.db.Exec(`UPDATE scheduler SET 
+                     date = :date, 
+                     title = :title, 
+                     comment = :comment, 
+                     repeat = :repeat WHERE id = :id`,
+		sql.Named("id", task.ID),
+		sql.Named("date", task.Date),
+		sql.Named("title", task.Title),
+		sql.Named("comment", task.Comment),
+		sql.Named("repeat", task.Repeat))
+	if err != nil {
+		return err
+	}
+
+	numRowAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if numRowAffected == 0 {
+		return customError.ErrNotValidID
+	}
+
+	return nil
 }
 
 // getTasksFromRows возвращает данные из sql ответа в виде слайса Task

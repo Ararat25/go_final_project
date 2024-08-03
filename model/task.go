@@ -8,8 +8,37 @@ import (
 
 // AddTask добавляет новую задачу в бд
 func AddTask(task *dbManager.Task, db *dbManager.SchedulerStore) (int64, error) {
+	err := checkTask(task)
+	if err != nil {
+		return -1, err
+	}
+
+	id, err := db.AddTask(*task)
+	if err != nil {
+		return -1, err
+	}
+
+	return id, nil
+}
+
+// EditTask изменяет пареметры задачи
+func EditTask(task *dbManager.Task, db *dbManager.SchedulerStore) error {
+	err := checkTask(task)
+	if err != nil {
+		return err
+	}
+
+	err = db.EditTaskById(task)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func checkTask(task *dbManager.Task) error {
 	if task.Title == "" {
-		return -1, customError.ErrTaskTitleNotSpecified
+		return customError.ErrTaskTitleNotSpecified
 	}
 
 	var date string
@@ -19,22 +48,17 @@ func AddTask(task *dbManager.Task, db *dbManager.SchedulerStore) (int64, error) 
 	} else {
 		taskDateParse, err := time.Parse(timeLayout, task.Date)
 		if err != nil {
-			return -1, err
+			return err
 		}
 
 		if task.Repeat != "" {
 			repeat, err := ParseRepeat(task.Repeat)
 			if err != nil {
-				return -1, err
+				return err
 			}
 
 			if len(repeat.FirstSlice) != 0 && time.Now().Format(timeLayout) <= taskDateParse.Format(timeLayout) {
-				id, err := db.AddTask(*task)
-				if err != nil {
-					return -1, err
-				}
-
-				return id, nil
+				return nil
 			}
 
 			if repeat.Period == "d" && repeat.FirstSlice[0] == 1 {
@@ -42,7 +66,7 @@ func AddTask(task *dbManager.Task, db *dbManager.SchedulerStore) (int64, error) 
 			} else {
 				date, err = NextDate(time.Now(), task.Date, task.Repeat)
 				if err != nil {
-					return -1, err
+					return err
 				}
 			}
 		} else {
@@ -56,10 +80,5 @@ func AddTask(task *dbManager.Task, db *dbManager.SchedulerStore) (int64, error) 
 
 	task.Date = date
 
-	id, err := db.AddTask(*task)
-	if err != nil {
-		return -1, err
-	}
-
-	return id, nil
+	return nil
 }
