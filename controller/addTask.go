@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"github.com/Ararat25/go_final_project/dbManager"
 	"github.com/Ararat25/go_final_project/model"
+	"log"
 	"net/http"
-	"time"
 )
 
 var timeLayout = "20060102"
@@ -23,79 +23,46 @@ func (h *Handler) AddTask(w http.ResponseWriter, r *http.Request) {
 
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
-		setErrorResponseData(w, http.StatusInternalServerError, err.Error())
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	err = json.Unmarshal(buf.Bytes(), &task)
 	if err != nil {
-		setErrorResponseData(w, http.StatusBadRequest, err.Error())
+		sendErrorResponseData(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if task.Title == "" {
-		setErrorResponseData(w, http.StatusBadRequest, "Не указан заголовок задачи")
-		return
-	}
-
-	var date string
-
-	if task.Date == "" {
-		date = time.Now().Format(timeLayout)
-	} else {
-		_, err := time.Parse(timeLayout, task.Date)
-		if err != nil {
-			setErrorResponseData(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		if task.Repeat != "" {
-			repeat, err := model.ParseRepeat(task.Repeat)
-			if err != nil {
-				setErrorResponseData(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-
-			if repeat.Period == "d" && repeat.FirstSlice[0] == 1 {
-				date = time.Now().Format(timeLayout)
-			} else {
-				date, err = model.NextDate(time.Now(), task.Date, task.Repeat)
-				if err != nil {
-					setErrorResponseData(w, http.StatusInternalServerError, err.Error())
-					return
-				}
-			}
-		} else {
-			date = time.Now().Format(timeLayout)
-		}
-	}
-
-	task.Date = date
-
-	id, err := h.service.DB.AddTask(task)
+	id, err := model.AddTask(&task, h.service.DB)
 	if err != nil {
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	setSuccessResponseData(w, http.StatusOK, id)
+	sendSuccessResponseData(w, http.StatusOK, id)
 }
 
-func setSuccessResponseData(w http.ResponseWriter, httpStatus int, id int64) {
+func sendSuccessResponseData(w http.ResponseWriter, httpStatus int, id int64) {
 	respBytes, err := json.Marshal(Response{Id: id})
 	if err != nil {
-		setErrorResponseData(w, http.StatusInternalServerError, err.Error())
+		log.Println(err)
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	w.WriteHeader(httpStatus)
 	w.Write(respBytes)
 }
 
-func setErrorResponseData(w http.ResponseWriter, httpStatus int, error string) {
+func sendErrorResponseData(w http.ResponseWriter, httpStatus int, error string) {
 	respBytes, err := json.Marshal(Response{Error: error})
 	if err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
+	log.Println(error)
 	w.WriteHeader(httpStatus)
 	w.Write(respBytes)
 }

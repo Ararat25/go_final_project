@@ -2,6 +2,7 @@ package dbManager
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	_ "modernc.org/sqlite"
 	"os"
@@ -13,7 +14,7 @@ import (
 var dbPath = tests.DBFile
 
 type Task struct {
-	ID      int64  `json:"id" db:"id"`
+	ID      string `json:"id" db:"id"`
 	Date    string `json:"date" db:"date"`
 	Title   string `json:"title" db:"title"`
 	Comment string `json:"comment" db:"comment"`
@@ -141,4 +142,87 @@ func (db *SchedulerStore) AddTask(task Task) (int64, error) {
 	}
 
 	return id, nil
+}
+
+// GetTasks возвращает все задачи из бд
+func (db *SchedulerStore) GetTasks(limit int) ([]Task, error) {
+	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit`,
+		sql.Named("limit", limit))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tasks, err := getTasksFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// GetTasksByDate возвращает задачи из бд по дате
+func (db *SchedulerStore) GetTasksByDate(limit int, date string) ([]Task, error) {
+	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler 
+                                        WHERE date = :date
+                                        ORDER BY date
+                                        LIMIT :limit`,
+		sql.Named("limit", limit),
+		sql.Named("date", date))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tasks, err := getTasksFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// GetTasksBySearchString возвращает задачи из бд по введенной строке
+func (db *SchedulerStore) GetTasksBySearchString(limit int, search string) ([]Task, error) {
+	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler 
+                                        WHERE title LIKE :search 
+                                        OR comment LIKE :search
+                                        ORDER BY date 
+                                        LIMIT :limit `,
+		sql.Named("limit", limit),
+		sql.Named("search", fmt.Sprintf("%%%s%%", search)))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tasks, err := getTasksFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// getTasksFromRows возвращает данные из sql ответа в виде слайса Task
+func getTasksFromRows(rows *sql.Rows) ([]Task, error) {
+	var tasks []Task
+
+	for rows.Next() {
+		var task Task
+
+		err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	err := rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }

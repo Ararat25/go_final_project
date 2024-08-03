@@ -54,11 +54,12 @@ func getServerWithProperties(port int, db *dbManager.SchedulerStore) *http.Serve
 
 	service := model.NewService(db)
 
-	handlers := controller.NewHandler(service)
+	handler := controller.NewHandler(service)
 
 	mux.Handle("/", http.FileServer(http.Dir(webDir)))
 	mux.HandleFunc("/api/nextdate", controller.NextDateHandler)
-	mux.Handle("/api/task", setJsonHeader(handlers.Task))
+	mux.Handle("/api/task", setJsonHeader(handler.Task))
+	mux.Handle("/api/tasks", setJsonHeader(handler.GetTasks))
 
 	server := http.Server{
 		Addr:    addr,
