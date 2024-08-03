@@ -1,14 +1,13 @@
 package model
 
 import (
-	"fmt"
 	"github.com/Ararat25/go_final_project/customError"
 	"strconv"
 	"strings"
 	"time"
 )
 
-var period = []string{"d", "w", "m", "y"}
+var period = []string{"d", "w", "m", "y"} // периоды для правила повторения
 
 // Repeat структура для работы с павилом повторения
 type Repeat struct {
@@ -17,31 +16,7 @@ type Repeat struct {
 	SecondSlice []int
 }
 
-var timeLayout = "20060102"
-
-func (r *Repeat) toString() string {
-	res := r.Period
-
-	firstString := ""
-	for _, elem := range r.FirstSlice {
-		firstString = fmt.Sprintf("%s,%s", firstString, elem)
-	}
-
-	secondString := ""
-	for _, elem := range r.FirstSlice {
-		secondString = fmt.Sprintf("%s,%s", secondString, elem)
-	}
-
-	if firstString != "" {
-		res = fmt.Sprintf("%s %s", res, firstString)
-	}
-
-	if secondString != "" {
-		res = fmt.Sprintf("%s %s", res, secondString)
-	}
-
-	return res
-}
+var timeLayout = "20060102" // шаблон для даты
 
 // NextDate возвращает следующий день, в зависимости от заданного правила
 func NextDate(now time.Time, date string, repeat string) (string, error) {
@@ -138,7 +113,7 @@ func sliceStringToInt(strSlice []string) ([]int, error) {
 	return intSlice, nil
 }
 
-// isValidDay проверяет что день переданная день есть в мапе
+// isValidDay проверяет что переданный день есть в мапе
 func isValidDay(nextDate time.Time, dayMap map[int]bool) bool {
 	dInMonth := daysInMonth(nextDate)
 	day := nextDate.Day()

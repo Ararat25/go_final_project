@@ -13,5 +13,7 @@ func (h *Handler) Task(w http.ResponseWriter, r *http.Request) {
 		h.GetTask(w, r)
 	case http.MethodPut:
 		h.EditTask(w, r)
+	case http.MethodDelete:
+		h.DeleteTask(w, r)
 	}
 }

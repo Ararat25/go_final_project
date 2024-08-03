@@ -47,6 +47,7 @@ func (h *Handler) EditTask(w http.ResponseWriter, r *http.Request) {
 	sendSuccessResponse(w, http.StatusOK)
 }
 
+// sendSuccessResponse отправляет успешный ответ от сервера с пустым json
 func sendSuccessResponse(w http.ResponseWriter, httpStatus int) {
 	emptyStruct := make(map[string]string, 1)
 

@@ -8,12 +8,14 @@ import (
 	"time"
 )
 
-var limit = 30
+var limit = 30 // лимит для количества возвращаемых задач из бд
 
+// ResponseTasks структура для упешного ответа с сервера
 type ResponseTasks struct {
 	Tasks []dbManager.Task `json:"tasks"`
 }
 
+// ResponseError структура для ответа с сервера с текстом ошибки
 type ResponseError struct {
 	Error string `json:"error"`
 }
@@ -25,7 +27,7 @@ func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	if search == "" {
 		tasks, err := h.service.DB.GetTasks(limit)
 		if err != nil {
-			sendErrorResponseTasks(w, http.StatusInternalServerError, err.Error())
+			sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
@@ -36,7 +38,7 @@ func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			tasks, err := h.service.DB.GetTasksByDate(limit, date.Format(timeLayout))
 			if err != nil {
-				sendErrorResponseTasks(w, http.StatusInternalServerError, err.Error())
+				sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 				return
 			}
 
@@ -44,7 +46,7 @@ func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 		} else {
 			tasks, err := h.service.DB.GetTasksBySearchString(limit, search)
 			if err != nil {
-				sendErrorResponseTasks(w, http.StatusInternalServerError, err.Error())
+				sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 				return
 			}
 
@@ -53,6 +55,7 @@ func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// checkTasks если переданная структура равна nil, то возвращается пустая структура
 func checkTasks(tasks []dbManager.Task) []dbManager.Task {
 	if len(tasks) == 0 {
 		return []dbManager.Task{}
@@ -61,27 +64,15 @@ func checkTasks(tasks []dbManager.Task) []dbManager.Task {
 	return tasks
 }
 
+// sendSuccessResponseTasks отправляет успешный ответ с сервера от обработчика GetTasks
 func sendSuccessResponseTasks(w http.ResponseWriter, httpStatus int, tasks []dbManager.Task) {
 	respBytes, err := json.Marshal(ResponseTasks{Tasks: tasks})
 	if err != nil {
 		log.Println(err)
-		sendErrorResponseTasks(w, http.StatusInternalServerError, err.Error())
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(httpStatus)
-	w.Write(respBytes)
-}
-
-func sendErrorResponseTasks(w http.ResponseWriter, httpStatus int, error string) {
-	respBytes, err := json.Marshal(ResponseError{Error: error})
-	if err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Println(error)
 	w.WriteHeader(httpStatus)
 	w.Write(respBytes)
 }

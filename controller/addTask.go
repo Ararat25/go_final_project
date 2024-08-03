@@ -9,8 +9,9 @@ import (
 	"net/http"
 )
 
-var timeLayout = "20060102"
+var timeLayout = "20060102" // шаблон для даты
 
+// Response структура для ответа от сервера
 type Response struct {
 	Id    int64  `json:"id,omitempty"`
 	Error string `json:"error,omitempty"`
@@ -42,6 +43,7 @@ func (h *Handler) AddTask(w http.ResponseWriter, r *http.Request) {
 	sendSuccessResponseData(w, http.StatusOK, id)
 }
 
+// sendSuccessResponseData отправляет успешный ответ с сервера от обработчика AddTask
 func sendSuccessResponseData(w http.ResponseWriter, httpStatus int, id int64) {
 	respBytes, err := json.Marshal(Response{Id: id})
 	if err != nil {
@@ -54,6 +56,7 @@ func sendSuccessResponseData(w http.ResponseWriter, httpStatus int, id int64) {
 	w.Write(respBytes)
 }
 
+// sendErrorResponseData отпраляет ответ с текстом ошибки с сервера
 func sendErrorResponseData(w http.ResponseWriter, httpStatus int, error string) {
 	respBytes, err := json.Marshal(Response{Error: error})
 	if err != nil {

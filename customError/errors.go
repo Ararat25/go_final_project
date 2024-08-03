@@ -7,4 +7,6 @@ var (
 	ErrNotValidRepeat        = errors.New("параметр repeat имеет неверный формат")
 	ErrTaskTitleNotSpecified = errors.New("не указан заголовок задачи")
 	ErrNotValidID            = errors.New("указан неверный идентификатор")
+	ErrIdNotSpecified        = errors.New("не указан идентификатор")
+	ErrInvalidIdFormat       = errors.New("указан не верный формат идентификатора")
 )

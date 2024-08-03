@@ -36,6 +36,7 @@ func EditTask(task *dbManager.Task, db *dbManager.SchedulerStore) error {
 	return nil
 }
 
+// checkTask проверяет валидность переданных параметров задачи
 func checkTask(task *dbManager.Task) error {
 	if task.Title == "" {
 		return customError.ErrTaskTitleNotSpecified

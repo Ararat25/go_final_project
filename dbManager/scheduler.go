@@ -205,8 +205,8 @@ func (db *SchedulerStore) GetTasksBySearchString(limit int, search string) ([]Ta
 	return tasks, nil
 }
 
-// GetTasksById возвращает задачу по id
-func (db *SchedulerStore) GetTasksById(id int) (*Task, error) {
+// GetTaskById возвращает задачу по id
+func (db *SchedulerStore) GetTaskById(id int) (*Task, error) {
 	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler 
                                         WHERE id = :id`,
 		sql.Named("id", id))
@@ -239,6 +239,26 @@ func (db *SchedulerStore) EditTaskById(task *Task) error {
 		sql.Named("title", task.Title),
 		sql.Named("comment", task.Comment),
 		sql.Named("repeat", task.Repeat))
+	if err != nil {
+		return err
+	}
+
+	numRowAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if numRowAffected == 0 {
+		return customError.ErrNotValidID
+	}
+
+	return nil
+}
+
+// DeleteTask удаляет задачу из бд
+func (db *SchedulerStore) DeleteTask(id int) error {
+	result, err := db.db.Exec(`DELETE FROM scheduler WHERE id = :id`,
+		sql.Named("id", id))
 	if err != nil {
 		return err
 	}
