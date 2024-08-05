@@ -12,12 +12,15 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 var (
 	defaultPort = tests.Port
 	webDir      = "../web"
 	toDoPort    = "TODO_PORT"
+	tokenTTL    = time.Hour * 8
+	tokenSalt   = "TOKEN_SALT"
 )
 
 // LoadEnvVars загружает переменные окружения из файла .env
@@ -52,15 +55,18 @@ func getServerWithProperties(port int, db *dbManager.SchedulerStore) *http.Serve
 	addr := fmt.Sprintf(":%d", port)
 	mux := http.NewServeMux()
 
-	service := model.NewService(db)
+	service := model.NewService(db, tokenTTL, []byte(os.Getenv(tokenSalt)))
 
 	handler := controller.NewHandler(service)
 
+	newMiddleware := middleware.NewMiddleware(service)
+
 	mux.Handle("/", http.FileServer(http.Dir(webDir)))
 	mux.HandleFunc("/api/nextdate", controller.NextDateHandler)
-	mux.Handle("/api/task", setJsonHeader(handler.Task))
-	mux.Handle("/api/tasks", setJsonHeader(handler.GetTasks))
-	mux.Handle("/api/task/done", setJsonHeader(handler.DoneTask))
+	mux.Handle("/api/task", newMiddleware.Auth(setJsonHeader(handler.Task)))
+	mux.Handle("/api/tasks", newMiddleware.Auth(setJsonHeader(handler.GetTasks)))
+	mux.Handle("/api/task/done", newMiddleware.Auth(setJsonHeader(handler.DoneTask)))
+	mux.Handle("/api/signin", setJsonHeader(handler.SignIn))
 
 	server := http.Server{
 		Addr:    addr,
