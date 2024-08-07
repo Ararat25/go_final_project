@@ -3,19 +3,22 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/Ararat25/go_final_project/customError"
 	"net/http"
-	"os"
+
+	"github.com/Ararat25/go_final_project/errors"
 )
 
+// ResponseWithToken структура для ответа с токеном
 type ResponseWithToken struct {
 	Token string `json:"token"`
 }
 
+// RequestWithPassword структура для запроса с паролем
 type RequestWithPassword struct {
 	Password string `json:"password"`
 }
 
+// SignIn обработчик для авторизации
 func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	var req RequestWithPassword
 	var buf bytes.Buffer
@@ -35,13 +38,13 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	password := req.Password
 
 	if len(password) == 0 {
-		sendErrorResponseData(w, http.StatusBadRequest, customError.ErrPasswordNotSpecified.Error())
+		sendErrorResponseData(w, http.StatusBadRequest, errors.ErrPasswordNotSpecified.Error())
 		return
 	}
 
-	envPassword := os.Getenv("TODO_PASSWORD")
+	envPassword := h.service.Config.Password
 	if len(envPassword) == 0 {
-		sendErrorResponseData(w, http.StatusInternalServerError, customError.ErrEnvPasswordNotSpecified.Error())
+		sendErrorResponseData(w, http.StatusInternalServerError, errors.ErrEnvPasswordNotSpecified.Error())
 		return
 	}
 
@@ -58,5 +61,5 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(respBytes)
+	_, _ = w.Write(respBytes)
 }

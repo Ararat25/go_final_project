@@ -2,34 +2,35 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/Ararat25/go_final_project/customError"
-	"github.com/Ararat25/go_final_project/dbManager"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/Ararat25/go_final_project/errors"
+	"github.com/Ararat25/go_final_project/model/entity"
 )
 
 // GetTask обработчик для получения задачи из бд
 func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
-	id := r.FormValue("id")
+	idString := r.FormValue("id")
 
-	idInt, err := checkID(id)
+	id, err := checkID(idString)
 	if err != nil {
 		sendErrorResponseData(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	task, err := h.service.DB.GetTaskById(idInt)
+	newTask, err := h.service.GetTaskById(id)
 	if err != nil {
 		sendErrorResponseData(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	sendSuccessResponseTask(w, http.StatusOK, task)
+	sendSuccessResponseTask(w, http.StatusOK, newTask)
 }
 
 // sendSuccessResponseTask отправляет успешный ответ с сервера от обработчика GetTask
-func sendSuccessResponseTask(w http.ResponseWriter, httpStatus int, task *dbManager.Task) {
+func sendSuccessResponseTask(w http.ResponseWriter, httpStatus int, task *entity.Task) {
 	respBytes, err := json.Marshal(task)
 	if err != nil {
 		log.Println(err)
@@ -38,18 +39,18 @@ func sendSuccessResponseTask(w http.ResponseWriter, httpStatus int, task *dbMana
 	}
 
 	w.WriteHeader(httpStatus)
-	w.Write(respBytes)
+	_, _ = w.Write(respBytes)
 }
 
 // checkID проверяет валидность ID
 func checkID(id string) (int, error) {
 	if id == "" {
-		return -1, customError.ErrIdNotSpecified
+		return -1, errors.ErrIdNotSpecified
 	}
 
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		return -1, customError.ErrInvalidIdFormat
+		return -1, errors.ErrInvalidIdFormat
 	}
 
 	return idInt, nil

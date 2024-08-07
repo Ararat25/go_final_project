@@ -1,25 +1,28 @@
 package middleware
 
 import (
-	"github.com/Ararat25/go_final_project/model"
 	"net/http"
-	"os"
+
+	"github.com/Ararat25/go_final_project/task"
 )
 
+// Middleware структура для обработчика-посредника
 type Middleware struct {
-	service *model.Service
+	service *task.Service
 }
 
-func NewMiddleware(service *model.Service) *Middleware {
+// NewMiddleware создание объекта Middleware
+func NewMiddleware(service *task.Service) *Middleware {
 	return &Middleware{
 		service: service,
 	}
 }
 
+// Auth middleware для проверки авторизации
 func (m Middleware) Auth(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		// смотрим наличие пароля
-		pass := os.Getenv("TODO_PASSWORD")
+		pass := m.service.Config.Password
 		if len(pass) > 0 {
 			token, err := r.Cookie("token")
 			if err != nil {

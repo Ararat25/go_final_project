@@ -3,16 +3,16 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/Ararat25/go_final_project/dbManager"
-	"github.com/Ararat25/go_final_project/model"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/Ararat25/go_final_project/model/entity"
 )
 
 // EditTask обработчик для изменения параметров задачи
 func (h *Handler) EditTask(w http.ResponseWriter, r *http.Request) {
-	var task dbManager.Task
+	var newTask entity.Task
 	var buf bytes.Buffer
 
 	_, err := buf.ReadFrom(r.Body)
@@ -21,24 +21,24 @@ func (h *Handler) EditTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.Unmarshal(buf.Bytes(), &task)
+	err = json.Unmarshal(buf.Bytes(), &newTask)
 	if err != nil {
 		sendErrorResponseData(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if task.ID == "" {
+	if newTask.ID == "" {
 		sendErrorResponseData(w, http.StatusBadRequest, "Не указан идентификатор")
 		return
 	}
 
-	_, err = strconv.Atoi(task.ID)
+	_, err = strconv.Atoi(newTask.ID)
 	if err != nil {
 		sendErrorResponseData(w, http.StatusBadRequest, "Указан не верный формат идентификатора")
 		return
 	}
 
-	err = model.EditTask(&task, h.service.DB)
+	err = h.service.EditTask(&newTask)
 	if err != nil {
 		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 		return
@@ -59,5 +59,5 @@ func sendSuccessResponse(w http.ResponseWriter, httpStatus int) {
 	}
 
 	w.WriteHeader(httpStatus)
-	w.Write(respBytes)
+	_, _ = w.Write(respBytes)
 }

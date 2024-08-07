@@ -1,8 +1,6 @@
-package model
+package entity
 
-import (
-	"github.com/golang-jwt/jwt/v5"
-)
+import "github.com/golang-jwt/jwt/v5"
 
 type TokenClaims struct {
 	PasswordChecksum string `json:"checksum"`

@@ -2,17 +2,16 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/Ararat25/go_final_project/dbManager"
 	"log"
 	"net/http"
 	"time"
-)
 
-var limit = 30 // лимит для количества возвращаемых задач из бд
+	"github.com/Ararat25/go_final_project/model/entity"
+)
 
 // ResponseTasks структура для упешного ответа с сервера
 type ResponseTasks struct {
-	Tasks []dbManager.Task `json:"tasks"`
+	Tasks []entity.Task `json:"tasks"`
 }
 
 // ResponseError структура для ответа с сервера с текстом ошибки
@@ -25,7 +24,7 @@ func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	search := r.FormValue("search")
 
 	if search == "" {
-		tasks, err := h.service.DB.GetTasks(limit)
+		tasks, err := h.service.GetTasks()
 		if err != nil {
 			sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 			return
@@ -36,7 +35,7 @@ func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	} else {
 		date, err := time.Parse("02.01.2006", search)
 		if err == nil {
-			tasks, err := h.service.DB.GetTasksByDate(limit, date.Format(timeLayout))
+			tasks, err := h.service.GetTasksByDate(date.Format(timeLayout))
 			if err != nil {
 				sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 				return
@@ -44,7 +43,7 @@ func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 
 			sendSuccessResponseTasks(w, http.StatusOK, checkTasks(tasks))
 		} else {
-			tasks, err := h.service.DB.GetTasksBySearchString(limit, search)
+			tasks, err := h.service.GetTasksBySearchString(search)
 			if err != nil {
 				sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 				return
@@ -56,16 +55,16 @@ func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 // checkTasks если переданная структура равна nil, то возвращается пустая структура
-func checkTasks(tasks []dbManager.Task) []dbManager.Task {
+func checkTasks(tasks []entity.Task) []entity.Task {
 	if len(tasks) == 0 {
-		return []dbManager.Task{}
+		return []entity.Task{}
 	}
 
 	return tasks
 }
 
 // sendSuccessResponseTasks отправляет успешный ответ с сервера от обработчика GetTasks
-func sendSuccessResponseTasks(w http.ResponseWriter, httpStatus int, tasks []dbManager.Task) {
+func sendSuccessResponseTasks(w http.ResponseWriter, httpStatus int, tasks []entity.Task) {
 	respBytes, err := json.Marshal(ResponseTasks{Tasks: tasks})
 	if err != nil {
 		log.Println(err)
@@ -74,5 +73,5 @@ func sendSuccessResponseTasks(w http.ResponseWriter, httpStatus int, tasks []dbM
 	}
 
 	w.WriteHeader(httpStatus)
-	w.Write(respBytes)
+	_, _ = w.Write(respBytes)
 }

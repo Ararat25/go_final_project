@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"github.com/Ararat25/go_final_project/model"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/Ararat25/go_final_project/model"
 )
 
 // NextDateHandler обработчик возвращает следующий день, в зависимости от заданного правила
@@ -28,5 +29,5 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(nextDate))
+	_, _ = w.Write([]byte(nextDate))
 }

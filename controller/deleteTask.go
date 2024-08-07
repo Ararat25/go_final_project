@@ -6,15 +6,15 @@ import (
 
 // DeleteTask обработчик для удаления задачи
 func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
-	id := r.FormValue("id")
+	idString := r.FormValue("id")
 
-	idInt, err := checkID(id)
+	id, err := checkID(idString)
 	if err != nil {
 		sendErrorResponseData(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err = h.service.DB.DeleteTask(idInt)
+	err = h.service.DeleteTask(id)
 	if err != nil {
 		sendErrorResponseData(w, http.StatusBadRequest, err.Error())
 		return

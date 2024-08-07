@@ -1,11 +1,14 @@
 package model
 
 import (
-	"github.com/Ararat25/go_final_project/customError"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Ararat25/go_final_project/errors"
 )
+
+const TimeLayout = "20060102" // шаблон для даты
 
 var period = []string{"d", "w", "m", "y"} // периоды для правила повторения
 
@@ -16,15 +19,13 @@ type Repeat struct {
 	SecondSlice []int
 }
 
-var timeLayout = "20060102" // шаблон для даты
-
 // NextDate возвращает следующий день, в зависимости от заданного правила
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 	if repeat == "" {
-		return "", customError.ErrRepeatNotSpecified
+		return "", errors.ErrRepeatNotSpecified
 	}
 
-	parseDate, err := time.Parse(timeLayout, date)
+	parseDate, err := time.Parse(TimeLayout, date)
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +63,7 @@ func ParseRepeat(repeat string) (Repeat, error) {
 	}
 
 	if !validRepeatRule {
-		return Repeat{}, customError.ErrNotValidRepeat
+		return Repeat{}, errors.ErrNotValidRepeat
 	}
 
 	if len(repeatSlice) < 2 {
@@ -129,12 +130,12 @@ func daysInMonth(t time.Time) int {
 // dParse парсер для расчета следующей даты при указании в правиле повторения d
 func dParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 	if len(repeat.FirstSlice) != 1 {
-		return "", customError.ErrNotValidRepeat
+		return "", errors.ErrNotValidRepeat
 	}
 
 	interval := repeat.FirstSlice[0]
 	if interval > 400 || interval < 1 {
-		return "", customError.ErrNotValidRepeat
+		return "", errors.ErrNotValidRepeat
 	}
 
 	nextDate := date.AddDate(0, 0, interval)
@@ -142,19 +143,19 @@ func dParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 		nextDate = nextDate.AddDate(0, 0, interval)
 	}
 
-	return nextDate.Format(timeLayout), nil
+	return nextDate.Format(TimeLayout), nil
 }
 
 // wParse парсер для расчета следующей даты при указании в правиле повторения w
 func wParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 	if len(repeat.FirstSlice) < 1 || len(repeat.FirstSlice) > 7 {
-		return "", customError.ErrNotValidRepeat
+		return "", errors.ErrNotValidRepeat
 	}
 
 	interval := repeat.FirstSlice
 	for _, elem := range interval {
 		if elem < 1 || elem > 7 {
-			return "", customError.ErrNotValidRepeat
+			return "", errors.ErrNotValidRepeat
 		}
 	}
 
@@ -182,13 +183,13 @@ func wParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 		nextDate = nextDate.AddDate(0, 0, 1)
 	}
 
-	return nextDate.Format(timeLayout), nil
+	return nextDate.Format(TimeLayout), nil
 }
 
 // mParse парсер для расчета следующей даты при указании в правиле повторения m
 func mParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 	if len(repeat.FirstSlice) == 0 {
-		return "", customError.ErrNotValidRepeat
+		return "", errors.ErrNotValidRepeat
 	}
 
 	additionalParameters := false
@@ -199,7 +200,7 @@ func mParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 	days := repeat.FirstSlice
 	for _, day := range days {
 		if day < -2 || day > 31 || day == 0 {
-			return "", customError.ErrNotValidRepeat
+			return "", errors.ErrNotValidRepeat
 		}
 	}
 
@@ -208,7 +209,7 @@ func mParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 		months = repeat.SecondSlice
 		for _, m := range months {
 			if m < 1 || m > 12 {
-				return "", customError.ErrNotValidRepeat
+				return "", errors.ErrNotValidRepeat
 			}
 		}
 	}
@@ -256,13 +257,13 @@ func mParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 		}
 	}
 
-	return nextDate.Format(timeLayout), nil
+	return nextDate.Format(TimeLayout), nil
 }
 
 // yParse парсер для расчета следующей даты при указании в правиле повторения y
 func yParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 	if len(repeat.FirstSlice) != 0 {
-		return "", customError.ErrNotValidRepeat
+		return "", errors.ErrNotValidRepeat
 	}
 
 	nextDate := date.AddDate(1, 0, 0)
@@ -270,5 +271,5 @@ func yParse(now time.Time, date time.Time, repeat Repeat) (string, error) {
 		nextDate = nextDate.AddDate(1, 0, 0)
 	}
 
-	return nextDate.Format(timeLayout), nil
+	return nextDate.Format(TimeLayout), nil
 }

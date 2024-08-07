@@ -1,33 +1,41 @@
-package model
+package task
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/Ararat25/go_final_project/customError"
-	"github.com/Ararat25/go_final_project/dbManager"
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	"github.com/Ararat25/go_final_project/cmd/config"
+	"github.com/Ararat25/go_final_project/errors"
+	"github.com/Ararat25/go_final_project/model/entity"
+	"github.com/golang-jwt/jwt/v5"
 )
 
-// Service структура для хранения ссылки на бд
+var serviceInstance *Service
+
+// Service структура для хранения данных для работы с сервисом
 type Service struct {
-	DB        *dbManager.SchedulerStore
-	TokenTTL  time.Duration
-	TokenSalt []byte
+	db       Storage
+	TokenTTL time.Duration
+	Config   *config.Config
 }
 
 // NewService создание нового объекта Service
-func NewService(db *dbManager.SchedulerStore, tokenTTL time.Duration, tokenSalt []byte) *Service {
-	return &Service{
-		DB:        db,
-		TokenTTL:  tokenTTL,
-		TokenSalt: tokenSalt,
+func NewService(db *Storage, tokenTTL time.Duration, config *config.Config) *Service {
+	if serviceInstance == nil {
+		serviceInstance = &Service{
+			db:       *db,
+			TokenTTL: tokenTTL,
+			Config:   config,
+		}
 	}
+
+	return serviceInstance
 }
 
 func (s *Service) CheckToken(token, envPassword string) error {
-	var claims TokenClaims
+	var claims entity.TokenClaims
 
 	jwtToken, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
@@ -35,18 +43,18 @@ func (s *Service) CheckToken(token, envPassword string) error {
 			return nil, fmt.Errorf("incorrect method")
 		}
 
-		return s.TokenSalt, nil
+		return s.Config.TokenSalt, nil
 	})
 	if err != nil {
 		return err
 	}
 
 	if !jwtToken.Valid {
-		return customError.ErrNotValidJwtToken
+		return errors.ErrNotValidJwtToken
 	}
 
 	if !s.doPasswordsMatch(claims.PasswordChecksum, envPassword) {
-		return customError.ErrNotValidJwtToken
+		return errors.ErrNotValidJwtToken
 	}
 
 	return nil
@@ -54,7 +62,7 @@ func (s *Service) CheckToken(token, envPassword string) error {
 
 func (s *Service) VerifyUser(envPassword, password string) (string, error) {
 	if envPassword != password {
-		return "", customError.ErrPasswordNotValid
+		return "", errors.ErrPasswordNotValid
 	}
 
 	return s.generateJwtToken(password)
@@ -62,7 +70,7 @@ func (s *Service) VerifyUser(envPassword, password string) (string, error) {
 
 func (s *Service) generateJwtToken(password string) (string, error) {
 	now := time.Now()
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, TokenClaims{
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, entity.TokenClaims{
 		PasswordChecksum: s.checksum(password),
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -70,7 +78,7 @@ func (s *Service) generateJwtToken(password string) (string, error) {
 		},
 	})
 
-	signedToken, err := jwtToken.SignedString(s.TokenSalt)
+	signedToken, err := jwtToken.SignedString(s.Config.TokenSalt)
 	if err != nil {
 		return "", err
 	}

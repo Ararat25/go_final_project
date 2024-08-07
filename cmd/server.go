@@ -2,32 +2,36 @@ package main
 
 import (
 	"fmt"
-	"github.com/Ararat25/go_final_project/controller"
-	"github.com/Ararat25/go_final_project/dbManager"
-	"github.com/Ararat25/go_final_project/middleware"
-	"github.com/Ararat25/go_final_project/model"
-	"github.com/Ararat25/go_final_project/tests"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/Ararat25/go_final_project/cmd/config"
+	"github.com/Ararat25/go_final_project/controller"
+	"github.com/Ararat25/go_final_project/middleware"
+	"github.com/Ararat25/go_final_project/task"
+	"github.com/Ararat25/go_final_project/task/dbManager"
+	"github.com/Ararat25/go_final_project/tests"
+	"github.com/joho/godotenv"
 )
 
 var (
 	defaultPort = tests.Port
+	tokenTTL    = time.Hour * 8
 	webDir      = "../web"
 	toDoPort    = "TODO_PORT"
-	tokenTTL    = time.Hour * 8
 	tokenSalt   = "TOKEN_SALT"
+	dbFile      = "TODO_DBFILE"
+	password    = "TODO_PASSWORD"
 )
 
 // LoadEnvVars загружает переменные окружения из файла .env
 func LoadEnvVars() {
 	err := godotenv.Load("../.env")
 	if err != nil {
-		log.Println("Ошибка загрузки .env файла, будут использованы значения по умолчанию")
+		log.Printf("Ошибка загрузки .env файла, будут использованы значения по умолчанию: %v\n", err)
 	}
 }
 
@@ -51,11 +55,13 @@ func runServer() {
 }
 
 // getServerWithProperties возвращает сервер с определенными свойствами
-func getServerWithProperties(port int, db *dbManager.SchedulerStore) *http.Server {
+func getServerWithProperties(port int, db task.Storage) *http.Server {
 	addr := fmt.Sprintf(":%d", port)
 	mux := http.NewServeMux()
 
-	service := model.NewService(db, tokenTTL, []byte(os.Getenv(tokenSalt)))
+	configData := config.NewConfig(port, []byte(os.Getenv(tokenSalt)), os.Getenv(dbFile), os.Getenv(password))
+
+	service := task.NewService(&db, tokenTTL, configData)
 
 	handler := controller.NewHandler(service)
 

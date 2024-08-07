@@ -3,13 +3,14 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/Ararat25/go_final_project/dbManager"
-	"github.com/Ararat25/go_final_project/model"
 	"log"
 	"net/http"
+
+	"github.com/Ararat25/go_final_project/model"
+	"github.com/Ararat25/go_final_project/model/entity"
 )
 
-var timeLayout = "20060102" // шаблон для даты
+var timeLayout = model.TimeLayout
 
 // Response структура для ответа от сервера
 type Response struct {
@@ -19,7 +20,7 @@ type Response struct {
 
 // AddTask обработчик для добавления новых задач
 func (h *Handler) AddTask(w http.ResponseWriter, r *http.Request) {
-	var task dbManager.Task
+	var newTask entity.Task
 	var buf bytes.Buffer
 
 	_, err := buf.ReadFrom(r.Body)
@@ -28,13 +29,13 @@ func (h *Handler) AddTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.Unmarshal(buf.Bytes(), &task)
+	err = json.Unmarshal(buf.Bytes(), &newTask)
 	if err != nil {
 		sendErrorResponseData(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	id, err := model.AddTask(&task, h.service.DB)
+	id, err := h.service.AddTask(&newTask)
 	if err != nil {
 		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 		return
@@ -53,7 +54,7 @@ func sendSuccessResponseData(w http.ResponseWriter, httpStatus int, id int64) {
 	}
 
 	w.WriteHeader(httpStatus)
-	w.Write(respBytes)
+	_, _ = w.Write(respBytes)
 }
 
 // sendErrorResponseData отпраляет ответ с текстом ошибки с сервера
@@ -61,11 +62,13 @@ func sendErrorResponseData(w http.ResponseWriter, httpStatus int, error string) 
 	respBytes, err := json.Marshal(Response{Error: error})
 	if err != nil {
 		log.Println(err)
+		log.Println(error)
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	log.Println(error)
 	w.WriteHeader(httpStatus)
-	w.Write(respBytes)
+	_, _ = w.Write(respBytes)
 }
