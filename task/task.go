@@ -25,6 +25,16 @@ func (s *Service) AddTask(task *entity.Task) (int64, error) {
 	return id, nil
 }
 
+// Find возвращает отфильтрованные по заданной строке задачи
+func (s *Service) Find(filter string) ([]entity.Task, error) {
+	tasks, err := s.db.Find(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 // GetTaskById возвращает задачу по id
 func (s *Service) GetTaskById(id int) (*entity.Task, error) {
 	newTask, err := s.db.GetTaskById(id)
@@ -33,36 +43,6 @@ func (s *Service) GetTaskById(id int) (*entity.Task, error) {
 	}
 
 	return newTask, nil
-}
-
-// GetTasks возвращает все задачи
-func (s *Service) GetTasks() ([]entity.Task, error) {
-	tasks, err := s.db.GetTasks()
-	if err != nil {
-		return nil, err
-	}
-
-	return tasks, nil
-}
-
-// GetTasksByDate возвращает задачи по дате
-func (s *Service) GetTasksByDate(date string) ([]entity.Task, error) {
-	tasks, err := s.db.GetTasksByDate(date)
-	if err != nil {
-		return nil, err
-	}
-
-	return tasks, nil
-}
-
-// GetTasksBySearchString возвращает задачи по введенной строке
-func (s *Service) GetTasksBySearchString(search string) ([]entity.Task, error) {
-	tasks, err := s.db.GetTasksBySearchString(search)
-	if err != nil {
-		return nil, err
-	}
-
-	return tasks, nil
 }
 
 // DoneTask отмечает задачу как выполненную

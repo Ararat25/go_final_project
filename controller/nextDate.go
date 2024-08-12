@@ -29,5 +29,10 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(nextDate))
+	_, err = w.Write([]byte(nextDate))
+	if err != nil {
+		log.Println(err)
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }

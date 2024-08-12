@@ -59,5 +59,10 @@ func sendSuccessResponse(w http.ResponseWriter, httpStatus int) {
 	}
 
 	w.WriteHeader(httpStatus)
-	_, _ = w.Write(respBytes)
+	_, err = w.Write(respBytes)
+	if err != nil {
+		log.Println(err)
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }

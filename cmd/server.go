@@ -13,12 +13,11 @@ import (
 	"github.com/Ararat25/go_final_project/middleware"
 	"github.com/Ararat25/go_final_project/task"
 	"github.com/Ararat25/go_final_project/task/dbManager"
-	"github.com/Ararat25/go_final_project/tests"
 	"github.com/joho/godotenv"
 )
 
 var (
-	defaultPort = tests.Port
+	defaultPort = 7540
 	tokenTTL    = time.Hour * 8
 	webDir      = "../web"
 	toDoPort    = "TODO_PORT"
@@ -70,7 +69,7 @@ func getServerWithProperties(port int, db task.Storage) *http.Server {
 	mux.Handle("/", http.FileServer(http.Dir(webDir)))
 	mux.HandleFunc("/api/nextdate", controller.NextDateHandler)
 	mux.Handle("/api/task", newMiddleware.Auth(setJsonHeader(handler.Task)))
-	mux.Handle("/api/tasks", newMiddleware.Auth(setJsonHeader(handler.GetTasks)))
+	mux.Handle("/api/tasks", newMiddleware.Auth(setJsonHeader(handler.Find)))
 	mux.Handle("/api/task/done", newMiddleware.Auth(setJsonHeader(handler.DoneTask)))
 	mux.Handle("/api/signin", setJsonHeader(handler.SignIn))
 

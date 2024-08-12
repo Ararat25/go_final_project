@@ -54,7 +54,12 @@ func sendSuccessResponseData(w http.ResponseWriter, httpStatus int, id int64) {
 	}
 
 	w.WriteHeader(httpStatus)
-	_, _ = w.Write(respBytes)
+	_, err = w.Write(respBytes)
+	if err != nil {
+		log.Println(err)
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }
 
 // sendErrorResponseData отпраляет ответ с текстом ошибки с сервера
@@ -70,5 +75,10 @@ func sendErrorResponseData(w http.ResponseWriter, httpStatus int, error string) 
 
 	log.Println(error)
 	w.WriteHeader(httpStatus)
-	_, _ = w.Write(respBytes)
+	_, err = w.Write(respBytes)
+	if err != nil {
+		log.Println(err)
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }

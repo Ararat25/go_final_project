@@ -1,6 +1,13 @@
 .PHONY: run
 run:
-	cd cmd && go build -o server.bin && ./server.bin
+	cd cmd && ./server.bin
+
+.PHONY: build
+build:
+	cd cmd && go build -o server.bin
+
+.PHONY: start
+start: build run
 
 .PHONY: test
 test:

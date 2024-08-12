@@ -6,13 +6,15 @@ COPY . .
 
 RUN go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o server.bin ./cmd
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
 
-FROM ubuntu:latest
+RUN go build -o server.bin ./cmd
+
+FROM alpine:latest
 
 WORKDIR /app/cmd
-
-EXPOSE 8080/tcp
 
 COPY --from=builder /app/server.bin ./
 

@@ -6,14 +6,15 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Ararat25/go_final_project/errors"
+	"github.com/Ararat25/go_final_project/model"
 	"github.com/Ararat25/go_final_project/model/entity"
-	"github.com/Ararat25/go_final_project/tests"
 	_ "modernc.org/sqlite"
 )
 
-var dbPath = tests.DBFile
+var dbPath = "../scheduler.db"
 
 const limit = 30 // лимит для количества возвращаемых задач из бд
 
@@ -107,64 +108,33 @@ func (db *SchedulerStore) AddTask(task entity.Task) (int64, error) {
 	return id, nil
 }
 
-// GetTasks возвращает все задачи из бд
-func (db *SchedulerStore) GetTasks() ([]entity.Task, error) {
-	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit`,
-		sql.Named("limit", limit))
-	if err != nil {
-		return nil, err
+// Find возвращает отфильтрованные по заданной строке задачи
+func (db *SchedulerStore) Find(filter string) ([]entity.Task, error) {
+	if filter == "" {
+		tasks, err := db.getTasks()
+		if err != nil {
+			return nil, err
+		}
+
+		return tasks, nil
+	} else {
+		date, err := time.Parse("02.01.2006", filter)
+		if err == nil {
+			tasks, err := db.getTasksByDate(date.Format(model.TimeLayout))
+			if err != nil {
+				return nil, err
+			}
+
+			return tasks, nil
+		} else {
+			tasks, err := db.getTasksBySearchString(filter)
+			if err != nil {
+				return nil, err
+			}
+
+			return tasks, nil
+		}
 	}
-	defer rows.Close()
-
-	tasks, err := getTasksFromRows(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return tasks, nil
-}
-
-// GetTasksByDate возвращает задачи из бд по дате
-func (db *SchedulerStore) GetTasksByDate(date string) ([]entity.Task, error) {
-	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler 
-                                        WHERE date = :date
-                                        ORDER BY date
-                                        LIMIT :limit`,
-		sql.Named("limit", limit),
-		sql.Named("date", date))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	tasks, err := getTasksFromRows(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return tasks, nil
-}
-
-// GetTasksBySearchString возвращает задачи из бд по введенной строке
-func (db *SchedulerStore) GetTasksBySearchString(search string) ([]entity.Task, error) {
-	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler 
-                                        WHERE title LIKE :search 
-                                        OR comment LIKE :search
-                                        ORDER BY date 
-                                        LIMIT :limit `,
-		sql.Named("limit", limit),
-		sql.Named("search", fmt.Sprintf("%%%s%%", search)))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	tasks, err := getTasksFromRows(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return tasks, nil
 }
 
 // GetTaskById возвращает задачу по id
@@ -235,6 +205,66 @@ func (db *SchedulerStore) DeleteTask(id int) error {
 	}
 
 	return nil
+}
+
+// getTasks возвращает все задачи из бд
+func (db *SchedulerStore) getTasks() ([]entity.Task, error) {
+	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit`,
+		sql.Named("limit", limit))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tasks, err := getTasksFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// getTasksByDate возвращает задачи из бд по дате
+func (db *SchedulerStore) getTasksByDate(date string) ([]entity.Task, error) {
+	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler 
+                                        WHERE date = :date
+                                        ORDER BY date
+                                        LIMIT :limit`,
+		sql.Named("limit", limit),
+		sql.Named("date", date))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tasks, err := getTasksFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// getTasksBySearchString возвращает задачи из бд по введенной строке
+func (db *SchedulerStore) getTasksBySearchString(search string) ([]entity.Task, error) {
+	rows, err := db.db.Query(`SELECT id, date, title, comment, repeat FROM scheduler 
+                                        WHERE title LIKE :search 
+                                        OR comment LIKE :search
+                                        ORDER BY date 
+                                        LIMIT :limit `,
+		sql.Named("limit", limit),
+		sql.Named("search", fmt.Sprintf("%%%s%%", search)))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tasks, err := getTasksFromRows(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
 
 // getTasksFromRows возвращает данные из sql ответа в виде слайса Task

@@ -39,7 +39,12 @@ func sendSuccessResponseTask(w http.ResponseWriter, httpStatus int, task *entity
 	}
 
 	w.WriteHeader(httpStatus)
-	_, _ = w.Write(respBytes)
+	_, err = w.Write(respBytes)
+	if err != nil {
+		log.Println(err)
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }
 
 // checkID проверяет валидность ID

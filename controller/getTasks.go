@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/Ararat25/go_final_project/model/entity"
 )
@@ -19,39 +18,17 @@ type ResponseError struct {
 	Error string `json:"error"`
 }
 
-// GetTasks обработчик для получения задач из бд
-func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
+// Find обработчик для получения задач из бд
+func (h *Handler) Find(w http.ResponseWriter, r *http.Request) {
 	search := r.FormValue("search")
 
-	if search == "" {
-		tasks, err := h.service.GetTasks()
-		if err != nil {
-			sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		sendSuccessResponseTasks(w, http.StatusOK, checkTasks(tasks))
+	tasks, err := h.service.Find(search)
+	if err != nil {
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
 		return
-	} else {
-		date, err := time.Parse("02.01.2006", search)
-		if err == nil {
-			tasks, err := h.service.GetTasksByDate(date.Format(timeLayout))
-			if err != nil {
-				sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-
-			sendSuccessResponseTasks(w, http.StatusOK, checkTasks(tasks))
-		} else {
-			tasks, err := h.service.GetTasksBySearchString(search)
-			if err != nil {
-				sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-
-			sendSuccessResponseTasks(w, http.StatusOK, checkTasks(tasks))
-		}
 	}
+
+	sendSuccessResponseTasks(w, http.StatusOK, checkTasks(tasks))
 }
 
 // checkTasks если переданная структура равна nil, то возвращается пустая структура
@@ -73,5 +50,10 @@ func sendSuccessResponseTasks(w http.ResponseWriter, httpStatus int, tasks []ent
 	}
 
 	w.WriteHeader(httpStatus)
-	_, _ = w.Write(respBytes)
+	_, err = w.Write(respBytes)
+	if err != nil {
+		log.Println(err)
+		sendErrorResponseData(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }
